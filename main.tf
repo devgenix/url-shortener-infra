@@ -1,9 +1,18 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
 
 resource "aws_iam_role" "apprunner_service_role" {
-  name = "${var.service_name}-service-role"
+  name = "url-shortener-service-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -32,7 +41,7 @@ resource "aws_iam_role_policy_attachment" "apprunner_service_role_policy" {
 }
 
 resource "aws_apprunner_service" "this" {
-  service_name = var.service_name
+  service_name = "url-shortener"
 
   source_configuration {
     authentication_configuration {
@@ -42,7 +51,7 @@ resource "aws_apprunner_service" "this" {
       repository_url = var.github_repo_url
       source_code_version {
         type  = "BRANCH"
-        value = var.github_branch
+        value = "main"
       }
       code_configuration {
         configuration_source = "REPOSITORY"
@@ -51,11 +60,10 @@ resource "aws_apprunner_service" "this" {
   }
 
   instance_configuration {
-    cpu    = "1024"
-    memory = "2048"
+    port = "8080"
   }
 
   tags = {
-    Name = var.service_name
+    Name = "url-shortener"
   }
 }
