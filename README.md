@@ -1,11 +1,11 @@
 # URL Shortener Infrastructure
 
-This repository contains the Terraform code to deploy the Simple URL Shortener application to AWS App Runner.
+This repository contains the Terraform code to deploy the simple URL shortener to AWS App Runner.
 
 ## Deployment Status
-- **Infrastructure:** AWS App Runner
-- **Connection:** GitHub Connection (Handshake Completed)
-- **Status:** Finalizing deployment...
+- **Provider:** AWS
+- **Service:** App Runner
+- **CI/CD:** GitHub Actions
 
-## Usage
-The deployment is managed via GitHub Actions. Any push to this branch will trigger a Terraform plan and apply.
+## Deployment Trigger
+Triggering deployment with configured `app_runner_connection_arn`.
