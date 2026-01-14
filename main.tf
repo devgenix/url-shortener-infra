@@ -1,25 +1,17 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
+resource "aws_apprunner_connection" "github" {
+  connection_name = "github-connection"
+  provider_type   = "GITHUB"
 }
 
-provider "aws" {
-  region = var.aws_region
-}
-
-resource "aws_apprunner_service" "url_shortener" {
-  service_name = "simple-url-shortener"
+resource "aws_apprunner_service" "this" {
+  service_name = var.service_name
 
   source_configuration {
     authentication_configuration {
-      connection_arn = var.github_connection_arn
+      connection_arn = aws_apprunner_connection.github.arn
     }
     code_repository {
-      repository_url = "https://github.com/devgenix/simple-url-shortener"
+      repository_url = var.repository_url
       source_code_version {
         type  = "BRANCH"
         value = "main"
@@ -30,12 +22,9 @@ resource "aws_apprunner_service" "url_shortener" {
     }
   }
 
-  instance_configuration {
-    cpu    = "1024"
-    memory = "2048"
-  }
-
-  tags = {
-    Name = "simple-url-shortener"
+  network_configuration {
+    egress_configuration {
+      egress_type = "DEFAULT"
+    }
   }
 }
