@@ -1,20 +1,25 @@
-# Infrastructure for Simple URL Shortener
+# URL Shortener Infrastructure
 
-This repository contains the Terraform code to deploy the URL shortener application to AWS App Runner.
+This repository contains Terraform code to deploy a simple URL shortener to AWS App Runner.
 
-## Prerequisites
-1. **GitHub Connection:** AWS App Runner requires a connection to GitHub. Since this requires a manual handshake, you must:
-   - Go to the [AWS App Runner Console](https://console.aws.amazon.com/apprunner/home).
-   - Navigate to **GitHub connections**.
-   - Create a new connection and follow the prompts to authorize AWS.
-   - Copy the **Connection ARN**.
+## Resources Created
+
+- **AWS App Runner Service**: Automatically builds and deploys the Flask application from the GitHub repository.
+- **IAM Roles**: Necessary permissions for App Runner to access other AWS services if needed.
 
 ## Deployment
-1. Initialize Terraform:
-   ```bash
-   terraform init
-   ```
-2. Apply the configuration (provide the Connection ARN when prompted):
-   ```bash
-   terraform apply -var="github_connection_arn=YOUR_CONNECTION_ARN"
-   ```
+
+Infrastructure is managed via GitHub Actions.
+
+### Prerequisites
+
+1.  **AWS Credentials**: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to GitHub Secrets.
+2.  **GitHub Connection**: After the first run, manually complete the handshake in the AWS Console for the created App Runner connection.
+
+## Variables
+
+- `app_name`: Name of the App Runner service.
+- `github_repo_url`: URL of the application repository.
+
+---
+*Triggered workflow run to initialize infrastructure.*
