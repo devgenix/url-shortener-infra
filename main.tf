@@ -1,18 +1,9 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 provider "aws" {
   region = var.aws_region
 }
 
 resource "aws_iam_role" "apprunner_service_role" {
-  name = "url-shortener-service-role"
+  name = "url-shortener-task-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -24,13 +15,6 @@ resource "aws_iam_role" "apprunner_service_role" {
           Service = "build.apprunner.amazonaws.com"
         }
       },
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "tasks.apprunner.amazonaws.com"
-        }
-      }
     ]
   })
 }
@@ -41,7 +25,7 @@ resource "aws_iam_role_policy_attachment" "apprunner_service_role_policy" {
 }
 
 resource "aws_apprunner_service" "this" {
-  service_name = "url-shortener"
+  service_name = "url-shortener-app"
 
   source_configuration {
     authentication_configuration {
@@ -60,10 +44,17 @@ resource "aws_apprunner_service" "this" {
   }
 
   instance_configuration {
-    port = "8080"
+    cpu    = "1024"
+    memory = "2048"
   }
 
-  tags = {
-    Name = "url-shortener"
+  network_configuration {
+    egress_configuration {
+      egress_type = "DEFAULT"
+    }
+  }
+
+  health_check_configuration {
+    protocol = "TCP"
   }
 }
