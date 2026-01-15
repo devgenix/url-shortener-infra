@@ -1,60 +1,63 @@
 provider "aws" {
-  region = var.aws_region
+  region = var.region
 }
 
-resource "aws_iam_role" "apprunner_service_role" {
-  name = "url-shortener-task-role"
+data "aws_availability_zones" "available" {}
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "build.apprunner.amazonaws.com"
-        }
-      },
-    ]
-  })
+locals {
+  name   = "url-shortener-eks"
+  vpc_cidr = "10.0.0.0/16"
+  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_service_role_policy" {
-  role       = aws_iam_role.apprunner_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  name = local.name
+  cidr = local.vpc_cidr
+
+  azs             = local.azs
+  private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k)]
+  public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
+
+  enable_nat_gateway = true
+  single_nat_gateway = true
+
+  public_subnet_tags = {
+    "kubernetes.io/role/elb" = 1
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/role/internal-elb" = 1
+  }
 }
 
-resource "aws_apprunner_service" "this" {
-  service_name = "url-shortener-app"
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 19.0"
 
-  source_configuration {
-    authentication_configuration {
-      connection_arn = var.app_runner_connection_arn
-    }
-    code_repository {
-      repository_url = var.github_repo_url
-      source_code_version {
-        type  = "BRANCH"
-        value = "main"
-      }
-      code_configuration {
-        configuration_source = "REPOSITORY"
-      }
-    }
-  }
+  cluster_name    = local.name
+  cluster_version = "1.27"
 
-  instance_configuration {
-    cpu    = "1024"
-    memory = "2048"
-  }
+  vpc_id                         = module.vpc.vpc_id
+  subnet_ids                     = module.vpc.private_subnets
+  cluster_endpoint_public_access = true
 
-  network_configuration {
-    egress_configuration {
-      egress_type = "DEFAULT"
+  eks_managed_node_groups = {
+    main = {
+      min_size     = 1
+      max_size     = 3
+      desired_size = 2
+
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
     }
   }
+}
 
-  health_check_configuration {
-    protocol = "TCP"
-  }
+resource "aws_ecr_repository" "app" {
+  name                 = "eks-url-shortener"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
 }
